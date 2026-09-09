@@ -282,7 +282,7 @@ DAYS.forEach((d,di)=>{
   let html='<h2><span class="bar" style="background:'+d.color+'"></span>'+d.name+' · '+d.focus+'</h2>';
   d.exercises.forEach((ex,ei)=>{
     const isAlt = ex.cyc===180;
-    html+=`<div class="ex" data-ex="${di}_${ei}">
+    html+=`<div class="ex" data-ex="${di}_${ei}" data-cyc="${ex.cyc}" data-sets="${ex.sr.split('×')[0].trim()}">
     <div class="top"><div>
       <div class="nm">${ex.n}</div>
       <div class="sr"><b>${ex.sr}</b></div>
@@ -356,6 +356,11 @@ document.querySelectorAll('.ex').forEach(ex=>{
       rows.classList.add('open');
       const chev=ex.querySelector('.chev');
       chev.textContent='▴'; chev.style.color='var(--orange)';
+      // acomodar cronometro al ejercicio elegido
+      const ns=parseInt(ex.dataset.sets,10); const nc=parseInt(ex.dataset.cyc,10);
+      if(ns>=1&&ns<=12){ setsTotal=ns; setNumEl.textContent=ns; }
+      if(nc>=10){ stopT(); total=nc; left=nc; doneSets=0; renderProg(); renderClock();
+        document.getElementById('tStart').textContent='INICIAR'; }
     }
   });
 });
