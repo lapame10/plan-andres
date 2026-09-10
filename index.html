@@ -66,6 +66,25 @@
   .ex .cyc{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--daycolor,var(--orange));
     background:color-mix(in srgb, var(--daycolor, #ff8a3d) 14%, transparent);padding:4px 9px;border-radius:8px;white-space:nowrap;}
   .ex .cyc.alt{color:var(--daycolor,var(--orange));background:color-mix(in srgb, var(--daycolor, #ff8a3d) 9%, transparent);border:1px solid color-mix(in srgb, var(--daycolor, #ff8a3d) 35%, transparent);}
+  /* RECORDS + TOAST */
+  #prWrap{margin:16px 16px 24px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);
+    border-radius:14px;overflow:hidden;}
+  #prBtn{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;
+    color:#fff;font-weight:800;font-size:13px;padding:14px 15px;cursor:pointer;font-family:inherit;}
+  #prBody{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  #prWrap.open #prBody{max-height:900px;}
+  .prlist{padding:0 15px 14px;}
+  .prrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);
+    font-size:13px;}
+  .prrow .pname{color:var(--dim);}
+  .prrow .pval{font-family:var(--mono);font-weight:800;color:var(--daycolor,var(--orange));}
+  .prrow .pwk{font-size:10px;color:var(--dim);margin-left:6px;}
+  #toast{position:fixed;left:50%;top:20px;transform:translate(-50%,-120%);z-index:99;
+    background:linear-gradient(135deg,var(--green),#1fa968);color:#04170d;font-weight:900;font-size:14px;
+    padding:13px 20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+    text-align:center;}
+  #toast.show{transform:translate(-50%,0);}
+  #toast small{display:block;font-weight:700;font-size:11px;opacity:.75;margin-top:3px;}
   /* TIP DEL DIA */
   #tipBox{display:none;margin:12px 16px 0;background:rgba(255,255,255,.04);
     border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:9px 13px;cursor:pointer;}
@@ -155,8 +174,6 @@
   </div>
 </header>
 
-<div id="tipBox"><div class="tl" id="tipHead">Tip del día <span class="chev2" id="tipChev">▾</span></div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div></div>
-
 <div class="rules">
   <div class="rule"><b>Cronómetro:</b> pones 2:00, haces la serie (lo que tarde) y descansas lo que resta. La siguiente serie empieza cuando suena.</div>
   <div class="rule cyan"><b>Excepción:</b> Bulgarian Split Squat y Walking Lunges usan ciclo de <b>3:00</b>.</div>
@@ -164,6 +181,8 @@
 </div>
 
 <div id="dayNav"></div>
+
+<div id="tipBox"><div class="tl" id="tipHead">Tip del día <span class="chev2" id="tipChev">▾</span></div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div></div>
 
 <div id="days"></div>
 
@@ -188,6 +207,12 @@
     </div>
   </div>
 </div>
+
+<div id="prWrap">
+  <button id="prBtn"><span>🏆 Récords personales</span><span id="prChev" class="chev2">▾</span></button>
+  <div id="prBody"><div id="prList" class="prlist"></div></div>
+</div>
+<div id="toast"></div>
 
 <footer>
   Regla A/B · Registra cada semana tocando un ejercicio.<br>
@@ -329,6 +354,75 @@ async function tipLoad(){
   }catch(e){}
 }
 tipLoad();
+
+/* ====== RECORDS PERSONALES ====== */
+let PRS = {};
+const PR_KEY = 'prs';
+function prNumeric(s){ if(!s) return NaN; const m=String(s).replace(',','.').match(/[0-9]+(\.[0-9]+)?/); return m?parseFloat(m[0]):NaN; }
+function prLabel(s){ const m=String(s).match(/(kg|lb|lbs)/i); return m?m[1].toLowerCase():''; }
+function computePRs(){
+  PRS={};
+  Object.keys(logs).forEach(k=>{
+    const w=logs[k]; if(!w) return;
+    Object.keys(w).forEach(wk=>{ const e=w[wk]; if(!e) return;
+      const n=prNumeric(e[0]);
+      if(!isNaN(n) && n>(PRS[k]?PRS[k].n:0)) PRS[k]={n:n, raw:e[0], wk:wk};
+    });
+  });
+}
+function renderPRs(){
+  const list=document.getElementById('prList');
+  if(!list) return;
+  computePRs();
+  const keys=Object.keys(PRS);
+  if(!keys.length){ list.innerHTML='<div style="color:var(--dim);font-size:12px;padding:6px 0">Aún no hay registros — cuando anoten pesos aparecerán aquí.</div>'; return; }
+  const rows=keys.map(k=>{
+    const parts=k.split('_'); const di=parseInt(parts[0].replace('d',''),10)-1; const ei=parseInt(parts[1],10);
+    const nm=(DAYS[di]&&DAYS[di].exercises[ei])?DAYS[di].exercises[ei].n:k;
+    return {nm:nm, v:PRS[k].raw+(prLabel(PRS[k].raw)?'':' kg'), wk:PRS[k].wk, n:PRS[k].n};
+  }).sort((a,b)=>b.n-a.n);
+  list.innerHTML=rows.map(r=>'<div class="prrow"><span class="pname">'+r.nm+'</span><span><span class="pval">'+r.v+'</span><span class="pwk">'+r.wk+'</span></span></div>').join('');
+}
+function checkPR(key, val){
+  const n=prNumeric(val); if(isNaN(n)) return;
+  if(!PRS[key] || n>PRS[key].n){
+    const prev=PRS[key]?PRS[key].n:0;
+    PRS[key]={n:n, raw:val, wk:'S'+(Object.keys(logs[key]||{}).length)};
+    if(prev>0){ // solo avisar cuando ya tenia marca previa
+      const parts=key.split('_'); const di=parseInt(parts[0].replace('d',''),10)-1; const ei=parseInt(parts[1],10);
+      const nm=(DAYS[di]&&DAYS[di].exercises[ei])?DAYS[di].exercises[ei].n:key;
+      showToast('¡NUEVO RÉCORD!','+nm+' · '+val);
+    }
+    syncPRs();
+  }
+}
+function showToast(big, small){
+  const el=document.getElementById('toast'); if(!el) return;
+  el.innerHTML=big+'<small>'+small+'</small>';
+  el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'), 4200);
+}
+function syncPRs(){
+  clearTimeout(window._prT);
+  window._prT=setTimeout(async()=>{
+    try{ await fetch(RTDB+'/'+CLOUD+'/prs.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(PRS)}); }catch(e){}
+  },800);
+}
+async function prLoad(){
+  try{ const r=await fetch(RTDB+'/'+CLOUD+'/prs.json',{cache:'no-store'});
+    if(r.ok){ const d=await r.json(); if(d&&typeof d==='object') PRS=d; }
+  }catch(e){}
+  renderPRs();
+}
+prLoad();
+document.addEventListener('click',function(e){
+  if(e.target.closest('#prWrap')){
+    const w=document.getElementById('prWrap');
+    w.classList.toggle('open');
+    document.getElementById('prChev').textContent=w.classList.contains('open')?'▴':'▾';
+    if(w.classList.contains('open')) renderPRs();
+  }
+});
 cloudLoad();
 
 function weekKey(dayId, exIdx){ return dayId+'_'+exIdx; }
@@ -408,6 +502,8 @@ function saveCell(key,w,idx,val){
   if(!logs[key][w]) logs[key][w]=['',''];
   logs[key][w][idx]=val;
   localStorage.setItem(LS,JSON.stringify(logs));
+  if(idx===0) checkPR(key,val);
+  renderPRs();
   syncCloud();
 }
 // tocar ejercicio = acordeon: abre el suyo y cierra los demas del dia
