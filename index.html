@@ -115,11 +115,18 @@
   .wrow.done input{background:rgba(61,214,140,.08);color:var(--green);}
   .wrow .sep2{display:none;}
   .vidrow{padding:2px 0 6px;}
-  .vidbtn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
-    background:rgba(255,255,255,.03);border:1px dashed var(--line);color:var(--dim);
-    border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;}
-  .vidbtn:active{background:rgba(255,255,255,.07);}
-  .vidbtn b{color:var(--orange);}
+  .vidbtn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    background:color-mix(in srgb, var(--daycolor, #ff8a3d) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--daycolor, #ff8a3d) 45%, transparent);
+    border-radius:12px;padding:11px 12px;font-size:12.5px;font-weight:800;cursor:pointer;text-decoration:none;
+    color:var(--daycolor,var(--orange));}
+  .vidbtn:active{transform:scale(.98);background:color-mix(in srgb, var(--daycolor, #ff8a3d) 20%, transparent);}
+  .vidbtn .vleft{display:flex;align-items:center;gap:8px;min-width:0;}
+  .vidbtn .vplay{width:26px;height:26px;border-radius:50%;flex:0 0 26px;display:flex;align-items:center;justify-content:center;
+    background:var(--daycolor,var(--orange));color:#141008;font-size:11px;}
+  .vidbtn .vlabel{color:#fff;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .vidbtn .vsub{display:block;font-size:9.5px;font-weight:600;color:var(--daycolor,var(--orange));opacity:.85;}
+  .vidbtn .vgo{font-size:16px;font-weight:900;color:var(--daycolor,var(--orange));}
   .basenote{font-size:12px;color:var(--green);background:rgba(61,214,140,.08);border:1px solid rgba(61,214,140,.2);
     border-radius:9px;padding:7px 10px;margin-bottom:8px;text-align:center;}
   .basenote b{font-size:14px;}
@@ -476,8 +483,10 @@ DAYS.forEach((d,di)=>{
       <span class="chev">▾</span>
     </div></div>
     <div class="wrows" id="rows_${di}_${ei}">
-      <div class="vidrow"><a class="vidbtn" target="_blank" rel="noopener"
-        href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.n + ' ejercicio como hacer tecnica')}">▶ Video · <b>${ex.n}</b></a></div>
+      <div class="vidrow"><a class="vidbtn" target="_blank" rel="noopener" title="Toca para ver la técnica"
+        href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.n + ' ejercicio como hacer tecnica')}">
+        <span class="vleft"><span class="vplay">▶</span><span><span class="vlabel">VER VIDEO</span><span class="vsub">Toca para ver la técnica</span></span></span>
+        <span class="vgo">›</span></a></div>
       ${baseInfo(ex.n)?'<div class="basenote">Última marca: <b>'+baseInfo(ex.n)+'</b></div>':''}
     </div>
     </div>`;
