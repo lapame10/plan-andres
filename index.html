@@ -463,7 +463,7 @@ function renderCongrats(){
   box.style.display='block';
 }
 
-const LBL={sinRacha:'Empieza tu racha hoy',anota:'Anota tus pesos y enciende el primer fuego',racha:'🔥 {n} días de racha seguida',faltan:'Te faltan {n} para {ico}',todos:'¡Colección completa!',chispa:'Chispa',impulso:'Impulso',constancia:'Constancia',medalla:'Medalla',diamante:'Diamante',corona:'Corona',leyenda:'Leyenda'};
+const LBL={sinRacha:'Empieza tu racha hoy',anota:'Anota tus pesos y enciende el primer fuego',racha:'🔥 {n} días seguidos',racha1:'🔥 {n} día seguido',faltan:'Te faltan {n} para {ico}',todos:'¡Colección completa!',chispa:'Chispa',impulso:'Impulso',constancia:'Constancia',medalla:'Medalla',diamante:'Diamante',corona:'Corona',leyenda:'Leyenda'};
 
 /* ===== RACHA Y COLECCION ===== */
 let actCache={};
@@ -492,7 +492,7 @@ function renderStreak(){
     rs.textContent=LBL.anota;
   } else {
     fu.textContent='🔥'.repeat(Math.min(n,5))+(n>5?(' ×'+n):'');
-    rt.textContent=LBL.racha.replace('{n}',n);
+    rt.textContent=(n===1?LBL.racha1:LBL.racha).replace('{n}',n);
     const sig=ITEMS.find(it=>it[0]>n);
     rs.textContent=sig?(LBL.faltan.replace('{n}',sig[0]-n).replace('{ico}',sig[1])):LBL.todos;
   }
