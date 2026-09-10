@@ -467,7 +467,8 @@ const LBL={sinRacha:'Empieza tu racha hoy',anota:'Anota tus pesos y enciende el 
 
 /* ===== RACHA Y COLECCION ===== */
 let actCache={};
-const ITEMS=[[1,'🔥',LBL.chispa],[3,'⚡',LBL.impulso],[5,'⭐',LBL.constancia],[10,'🏅',LBL.medalla],[15,'💎',LBL.diamante],[21,'👑',LBL.corona],[30,'🏆',LBL.leyenda]];
+const FIRE='https://lapame10.github.io/plan-gym/assets/fuego.png';
+const ITEMS=[[1,'<img src="'+FIRE+'" style="height:22px">',LBL.chispa],[3,'⚡',LBL.impulso],[5,'⭐',LBL.constancia],[10,'🏅',LBL.medalla],[15,'💎',LBL.diamante],[21,'👑',LBL.corona],[30,'🏆',LBL.leyenda]];
 function streakCount(){
   const dias=Object.keys(actCache).sort().reverse();
   if(!dias.length) return 0;
@@ -487,11 +488,11 @@ function renderStreak(){
   const fu=document.getElementById('fuegos'), rt=document.getElementById('rtxt'), rs=document.getElementById('rsub');
   if(!fu) return;
   if(n===0){
-    fu.textContent='🔥';
+    fu.innerHTML='<img src="'+FIRE+'" style="height:21px;opacity:.45;vertical-align:-4px">';
     rt.textContent=LBL.sinRacha;
     rs.textContent=LBL.anota;
   } else {
-    fu.textContent='🔥'.repeat(Math.min(n,5))+(n>5?(' ×'+n):'');
+    fu.innerHTML='<img src="'+FIRE+'" style="height:21px;vertical-align:-4px;margin-right:1px">'.repeat(Math.min(n,5))+(n>5?('<span style="font-size:12px;color:#ffb37a;font-weight:800"> ×'+n+'</span>'):'');
     rt.textContent=(n===1?LBL.racha1:LBL.racha).replace('{n}',n);
     const sig=ITEMS.find(it=>it[0]>n);
     rs.textContent=sig?(LBL.faltan.replace('{n}',sig[0]-n).replace('{ico}',sig[1])):LBL.todos;
