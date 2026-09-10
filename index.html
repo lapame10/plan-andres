@@ -592,6 +592,10 @@ function renderProg(){
 }
 let AC=null;
 function audioUnlock(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} }
+/* desbloquear audio al primer toque en cualquier parte (iOS) */
+['pointerdown','touchend','click'].forEach(function(ev){
+  document.addEventListener(ev, function once(){ audioUnlock(); document.removeEventListener(ev, once); }, {passive:true});
+});
 function chime(){
   try{
     audioUnlock();
