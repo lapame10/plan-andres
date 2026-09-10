@@ -52,7 +52,8 @@
 
   /* DAY CARD */
   .daycard{display:none;margin:10px 16px 0;}
-  .daycard.show{display:block;}
+  .daycard.show{display:block;animation:dayIn .3s cubic-bezier(.2,.8,.2,1);}
+  @keyframes dayIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
   .daycard h2{font-size:18px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
   .daycard h2 .bar{width:6px;height:22px;border-radius:3px;}
   .ex{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:9px;cursor:pointer;transition:border-color .15s;}
@@ -67,8 +68,12 @@
   .ex .cyc.alt{color:var(--cyan);background:rgba(77,216,255,.10);}
   /* TIP DEL DIA */
   #tipBox{display:none;margin:12px 16px 0;background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(255,138,61,.05));
-    border:1px solid rgba(255,138,61,.3);border-radius:16px;padding:13px 15px;}
-  #tipBox .tl{font-size:9px;letter-spacing:2px;color:var(--orange);font-weight:800;text-transform:uppercase;margin-bottom:6px;}
+    border:1px solid rgba(255,138,61,.3);border-radius:16px;padding:12px 15px;cursor:pointer;}
+  #tipBox .tl{font-size:9px;letter-spacing:2px;color:var(--orange);font-weight:800;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:space-between;}
+  #tipBox .tl .chev2{font-size:11px;color:var(--orange);}
+  #tipBody{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  #tipBox.open #tipBody{max-height:320px;}
   #tipBox .tx{font-size:13.5px;line-height:1.5;color:#f0f0f4;}
   #tipBox .tx b{color:var(--orange);}
   #tipBox .dt{font-size:10px;color:var(--dim);margin-top:7px;}
@@ -149,7 +154,7 @@
   </div>
 </header>
 
-<div id="tipBox"><div class="tl">Tip del día</div><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div>
+<div id="tipBox"><div class="tl" id="tipHead">Tip del día <span class="chev2" id="tipChev">▾</span></div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div></div>
 
 <div class="rules">
   <div class="rule"><b>Cronómetro:</b> pones 2:00, haces la serie (lo que tarde) y descansas lo que resta. La siguiente serie empieza cuando suena.</div>
@@ -301,6 +306,13 @@ function syncCloud(){
     }catch(e){}
   },700);
 }
+document.addEventListener('click',function(e){
+  if(e.target.closest('#tipBox')){
+    const b=document.getElementById('tipBox');
+    b.classList.toggle('open');
+    document.getElementById('tipChev').textContent=b.classList.contains('open')?'▴':'▾';
+  }
+});
 async function tipLoad(){
   try{
     const r=await fetch(RTDB+'/'+CLOUD+'/tip.json',{cache:'no-store'});
@@ -310,6 +322,12 @@ async function tipLoad(){
         document.getElementById('tipText').innerHTML=d.text;
         document.getElementById('tipDate').textContent=d.date?('Actualizado: '+d.date):'';
         document.getElementById('tipBox').style.display='block';
+        // abrir automatico si el tip es nuevo
+        if(d.date && sessionStorage.getItem('tipSeen')!==d.date){
+          document.getElementById('tipBox').classList.add('open');
+          document.getElementById('tipChev').textContent='▴';
+          sessionStorage.setItem('tipSeen',d.date);
+        }
       }
     }
   }catch(e){}
