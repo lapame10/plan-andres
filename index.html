@@ -184,7 +184,7 @@
 </header>
 
 <div class="rules">
-  <div class="rule"><b>Cronómetro:</b> pones 2:00, haces la serie (lo que tarde) y descansas lo que resta. La siguiente serie empieza cuando suena.</div>
+  <div class="rule"><b>Cronómetro:</b> pones 2:00, haces la serie (lo que tarde) y descansas lo que resta. La siguiente serie empieza cuando el cronómetro llega a <b>0</b> (suena un bip).</div>
   <div class="rule cyan"><b>Excepción:</b> Bulgarian Split Squat y Walking Lunges usan ciclo de <b>3:00</b>.</div>
   <div class="rule green"><b>Progresión:</b> Semana A subes peso (si completas con RIR 0-1) · Semana B subes 1-2 reps. Si haces <b>+12 reps</b>, súbele 30s al reloj (2:00→2:30→3:00).</div>
 </div>
@@ -590,10 +590,28 @@ function renderProg(){
   progEl.textContent='Serie '+(doneSets+1)+'/'+setsTotal;
   progEl.className=(doneSets>0)?'good':'';
 }
-function chime(){ try{ navigator.vibrate&&navigator.vibrate([250,120,250]);}catch(e){} }
+let AC=null;
+function audioUnlock(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} }
+function chime(){
+  try{
+    audioUnlock();
+    const t0=AC.currentTime;
+    [0,0.22].forEach(function(off,i){
+      const o=AC.createOscillator(), g=AC.createGain();
+      o.type='sine'; o.frequency.value=(i===0?880:1180);
+      g.gain.setValueAtTime(0.0001,t0+off);
+      g.gain.exponentialRampToValueAtTime(0.4,t0+off+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+off+0.17);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t0+off); o.stop(t0+off+0.19);
+    });
+  }catch(e){}
+  try{ navigator.vibrate&&navigator.vibrate([250,120,250]);}catch(e){}
+}
 function stopT(){ clearInterval(timerInt); running=false; clockEl.classList.remove('run');
   document.getElementById('tStart').textContent='INICIAR'; }
 function startT(){
+  audioUnlock();
   if(running){ stopT(); return; }
   if(left<=0||doneSets>=setsTotal){ left=total; doneSets=0; renderProg(); }
   running=true; clockEl.classList.add('run');
