@@ -602,6 +602,7 @@ function saveCell(key,w,idx,val){
   if(!logs[key][w]) logs[key][w]=['',''];
   logs[key][w][idx]=val;
   localStorage.setItem(LS,JSON.stringify(logs));
+  if(val && String(val).trim()) marcarActividad();
   if(idx===0) checkPR(key,val);
   renderPRs();
   syncCloud();
