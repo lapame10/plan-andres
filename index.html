@@ -121,6 +121,12 @@
   .srow .sdel.ph{visibility:hidden;}
   .sadd{width:100%;margin-top:7px;background:rgba(255,255,255,.03);border:1px dashed var(--line);
     color:var(--dim);font-family:inherit;font-size:11px;font-weight:800;padding:9px;border-radius:8px;}
+  .unirow{display:flex;align-items:center;gap:6px;margin:8px 0 6px}
+  .unilab{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-right:2px}
+  .unib{background:transparent;border:1px solid var(--line);color:var(--dim);font:inherit;
+    font-size:11px;font-weight:600;padding:3px 12px;border-radius:7px;cursor:pointer}
+  .unib.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+
   .sres{font-family:var(--mono);font-size:10.5px;color:var(--green);padding:9px 2px 2px;}
   .sres span{color:var(--dim);}
 
@@ -368,7 +374,7 @@ try { logs = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) {}
 /* ====== SINCRONIZACION EN NUBE (Firebase Realtime) ====== */
 const RTDB='https://plan-gym-8aff7-default-rtdb.firebaseio.com';
 const CLOUD='andres';
-const BUILD='p5';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
+const BUILD='p6';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
 let _syncT=null;
 async function cloudLoad(){
   try{
@@ -435,16 +441,30 @@ function guardarSeries(key){
 function ponerSerie(key,w,i,c,val){
   const a=seriesDe(key,w);
   while(a.length<=i) a.push(['','']);
-  a[i][c]=val;
+  if(c===0){
+    /* el peso se guarda CON su unidad pegada -> prLabel/prNumeric ya la entienden */
+    const u=uniDe(key, nombreDeKey(key));
+    const n=soloNumero(val);
+    a[i][0] = val ? (n ? n+' '+u : val) : '';
+  } else {
+    a[i][c]=val;
+  }
   guardarSeries(key);
 }
 function anadirSerie(key,w){ const a=seriesDe(key,w); a.push(['','']); guardarSeries(key); }
 function quitarSerie(key,w,i){ const a=seriesDe(key,w); a.splice(i,1); guardarSeries(key); }
+let keyActual=null, nombreActual='';      // contexto para resumenSeries
 function resumenSeries(arr){
   const con=(arr||[]).filter(s=>s[0]&&s[1]);
   if(!con.length) return 'Sin series anotadas todavía';
   const vol=con.reduce((t,s)=>t+(prNumeric(s[0])||0)*(prNumeric(s[1])||0),0);
-  return con.length+(con.length===1?' serie':' series')+' <span>·</span> '+Math.round(vol).toLocaleString('en-US')+' kg de volumen';
+  const u = uniDe(keyActual, nombreActual);       // la unidad elegida para este ejercicio
+  return con.length+(con.length===1?' serie':' series')+' <span>·</span> '+Math.round(vol).toLocaleString('en-US')+' '+u+' de volumen';
+}
+function nombreDeKey(key){                    // 'd3_1' -> nombre del ejercicio
+  const p=String(key).split('_');
+  const di=parseInt(String(p[0]).replace('d',''),10)-1, ei=parseInt(p[1],10);
+  return (DAYS[di]&&DAYS[di].exercises[ei]) ? DAYS[di].exercises[ei].n : '';
 }
 function pintarSeries(box,key){
   if(_semActiva[key]===undefined) _semActiva[key]=0;
@@ -459,12 +479,19 @@ function pintarSeries(box,key){
   h+='</div>';
 
   const n=Math.max(arr.length,3);
+  const nom = nombreDeKey(key);
+  const u   = uniDe(key, nom);
+  h+='<div class="unirow">'+
+     '<span class="unilab">Unidad</span>'+
+     '<button class="unib'+(u==='kg'?' on':'')+'" data-u="kg">kg</button>'+
+     '<button class="unib'+(u==='lb'?' on':'')+'" data-u="lb">lb</button>'+
+     '</div>';
   h+='<div class="slist">';
   for(let i=0;i<n;i++){
     const sr=arr[i]||['',''];
     h+='<div class="srow">'+
        '<span class="sn">Serie '+(i+1)+'</span>'+
-       '<input class="sip" data-i="'+i+'" data-c="0" inputmode="decimal" placeholder="kg" value="'+(sr[0]||'')+'">'+
+       '<input class="sip" data-i="'+i+'" data-c="0" inputmode="decimal" placeholder="'+u+'" value="'+soloNumero(sr[0])+'">'+
        '<span class="x">×</span>'+
        '<input class="sip" data-i="'+i+'" data-c="1" inputmode="numeric" placeholder="rep" value="'+(sr[1]||'')+'">'+
        (i<arr.length ? '<button class="sdel" data-i="'+i+'" title="quitar">×</button>' : '<span class="sdel ph"></span>')+
@@ -472,6 +499,7 @@ function pintarSeries(box,key){
   }
   h+='</div>';
   h+='<button class="sadd">+ Añadir serie</button>';
+  keyActual=key; nombreActual=nom;
   h+='<div class="sres">'+resumenSeries(arr)+'</div>';
   box.innerHTML=h;
 
@@ -483,7 +511,21 @@ function pintarSeries(box,key){
     inp.addEventListener('input',function(){
       ponerSerie(key,w,parseInt(this.getAttribute('data-i'),10),parseInt(this.getAttribute('data-c'),10),this.value.trim());
       const r=box.querySelector('.sres');
-      if(r) r.innerHTML=resumenSeries(normaliza(logs[key]&&logs[key][w]));
+      if(r){ keyActual=key; nombreActual=nombreDeKey(key);
+             r.innerHTML=resumenSeries(normaliza(logs[key]&&logs[key][w])); }
+    });
+  });
+  box.querySelectorAll('.unib').forEach(function(b){
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      const u=this.getAttribute('data-u');
+      if(u===uniDe(key,nombreDeKey(key))) return;       // ya esta puesta
+      UNI[key]=u; guardarUni();
+      /* reescribir las series ya anotadas con la unidad nueva */
+      const a=seriesDe(key,w);
+      a.forEach(function(sr){ if(sr && sr[0]){ const n=soloNumero(sr[0]); if(n) sr[0]=n+' '+u; } });
+      guardarSeries(key);
+      pintarSeries(box,key);
     });
   });
   box.querySelectorAll('.sdel').forEach(function(b){
@@ -507,6 +549,27 @@ let PRS = {};
 const PR_KEY = 'prs';
 function prNumeric(s){ if(!s) return NaN; const m=String(s).replace(',','.').match(/[0-9]+(\.[0-9]+)?/); return m?parseFloat(m[0]):NaN; }
 function prLabel(s){ const m=String(s).match(/(kg|lb|lbs)/i); return m?m[1].toLowerCase():''; }
+
+/* ===== UNIDAD (kg / lb) =====
+   La BASE ya trae la unidad de cada ejercicio. Aqui se guarda la que elige el atleta,
+   que puede cambiarla. Persiste en localStorage: es preferencia del dispositivo. */
+const LS_U = LS + '_uni';
+let UNI = {};
+try { UNI = JSON.parse(localStorage.getItem(LS_U)) || {}; } catch(e) { UNI = {}; }
+
+function uniBase(nombre){                     // la que sugiere la BASE para ese ejercicio
+  const b = baseInfo(nombre);
+  if(b){ const m = String(b).match(/(kg|lb|lbs)/i); if(m) return m[1].toLowerCase(); }
+  return 'kg';
+}
+function uniDe(key, nombre){                  // la que esta usando ahora mismo
+  return UNI[key] || uniBase(nombre);
+}
+function guardarUni(){ try{ localStorage.setItem(LS_U, JSON.stringify(UNI)); }catch(e){} }
+function soloNumero(s){                       // quita la unidad para mostrarla en el input
+  const m = String(s==null?'':s).replace(',','.').match(/[0-9]+(\.[0-9]+)?/);
+  return m ? m[0] : '';
+}
 function computePRs(){
   const prev=PRS||{};
   const out={};
