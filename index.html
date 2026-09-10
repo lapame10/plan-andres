@@ -96,6 +96,27 @@
   .prrow .pname{color:var(--dim);}
   .prrow .pval{font-family:var(--mono);font-weight:800;color:var(--daycolor,var(--orange));}
   .prrow .pwk{font-size:10px;color:var(--dim);margin-left:6px;}
+  /* --- registro por SEMANA -> SERIES --- */
+  .wkbar{display:flex;gap:5px;overflow-x:auto;padding:6px 0 8px;-webkit-overflow-scrolling:touch;}
+  .wkbar::-webkit-scrollbar{display:none;}
+  .wkchip{flex:0 0 auto;background:rgba(255,255,255,.05);border:1px solid transparent;color:var(--dim);
+    font-family:var(--mono);font-size:10.5px;font-weight:800;padding:6px 10px;border-radius:6px;}
+  .wkchip.on{background:var(--daycolor,var(--orange));color:#0b0b0f;font-weight:900;}
+  .wkchip.has:not(.on){color:var(--green);border-color:rgba(61,214,140,.35);}
+  .srow{display:grid;grid-template-columns:58px 1fr 12px 1fr 22px;gap:5px;align-items:center;padding:4px 0;}
+  .srow .sn{font-family:var(--mono);font-size:9.5px;font-weight:800;color:var(--dim);letter-spacing:.3px;}
+  .srow input{width:100%;background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:7px;
+    outline:none;color:#fff;font-family:var(--mono);font-size:13px;padding:8px 4px;text-align:center;}
+  .srow input:focus{border-color:var(--daycolor,var(--orange));background:rgba(255,255,255,.07);}
+  .srow input::placeholder{color:#3c3c48;}
+  .srow .x{color:#4a4a58;font-size:11px;text-align:center;}
+  .srow .sdel{background:none;border:none;color:#5a5a68;font-size:16px;padding:0;line-height:1;font-family:inherit;}
+  .srow .sdel.ph{visibility:hidden;}
+  .sadd{width:100%;margin-top:7px;background:rgba(255,255,255,.03);border:1px dashed var(--line);
+    color:var(--dim);font-family:inherit;font-size:11px;font-weight:800;padding:9px;border-radius:8px;}
+  .sres{font-family:var(--mono);font-size:10.5px;color:var(--green);padding:9px 2px 2px;}
+  .sres span{color:var(--dim);}
+
   #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translate(-50%,-160%);
     z-index:99;background:linear-gradient(135deg,var(--green),#1fa968);color:#04170d;font-weight:900;font-size:14px;
     padding:13px 20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);
@@ -380,6 +401,100 @@ async function tipLoad(){
 }
 tipLoad();
 
+
+/* ===== SERIES (registro por semana -> series) ===== */
+const _semActiva={};
+function normaliza(v){
+  if(!v) return [];
+  if(Array.isArray(v) && v.length && Array.isArray(v[0])) return v;
+  if(Array.isArray(v) && v.length>=2 && !Array.isArray(v[0])) return [v];   // formato viejo: un solo [kg,rep]
+  return [];
+}
+function seriesDe(key,w){
+  if(!logs[key]) logs[key]={};
+  const a=normaliza(logs[key][w]);
+  logs[key][w]=a;
+  return a;
+}
+function guardarSeries(key){
+  try{ localStorage.setItem(LS,JSON.stringify(logs)); }catch(e){}
+  const w=WEEKS[_semActiva[key]||0];
+  const a=normaliza(logs[key]&&logs[key][w]);
+  const con=a.filter(x=>x[0]&&x[1]);
+  if(con.length){ marcarActividad(); checkPR(key,con[con.length-1][0],w); }
+  renderPRs();
+  syncCloud();
+}
+function ponerSerie(key,w,i,c,val){
+  const a=seriesDe(key,w);
+  while(a.length<=i) a.push(['','']);
+  a[i][c]=val;
+  guardarSeries(key);
+}
+function anadirSerie(key,w){ const a=seriesDe(key,w); a.push(['','']); guardarSeries(key); }
+function quitarSerie(key,w,i){ const a=seriesDe(key,w); a.splice(i,1); guardarSeries(key); }
+function resumenSeries(arr){
+  const con=(arr||[]).filter(s=>s[0]&&s[1]);
+  if(!con.length) return 'Sin series anotadas todavía';
+  const vol=con.reduce((t,s)=>t+(prNumeric(s[0])||0)*(prNumeric(s[1])||0),0);
+  return con.length+(con.length===1?' serie':' series')+' <span>·</span> '+Math.round(vol).toLocaleString('en-US')+' kg de volumen';
+}
+function pintarSeries(box,key){
+  if(_semActiva[key]===undefined) _semActiva[key]=0;
+  const wi=_semActiva[key], w=WEEKS[wi];
+  const arr=normaliza(logs[key]&&logs[key][w]);
+
+  let h='<div class="wkbar">';
+  WEEKS.forEach(function(x,i){
+    const tiene=normaliza(logs[key]&&logs[key][x]).some(function(s){ return s[0]&&s[1]; });
+    h+='<button class="wkchip'+(i===wi?' on':'')+(tiene?' has':'')+'" data-w="'+i+'">'+x.replace('Sem ','S')+'</button>';
+  });
+  h+='</div>';
+
+  const n=Math.max(arr.length,3);
+  h+='<div class="slist">';
+  for(let i=0;i<n;i++){
+    const sr=arr[i]||['',''];
+    h+='<div class="srow">'+
+       '<span class="sn">Serie '+(i+1)+'</span>'+
+       '<input class="sip" data-i="'+i+'" data-c="0" inputmode="decimal" placeholder="kg" value="'+(sr[0]||'')+'">'+
+       '<span class="x">×</span>'+
+       '<input class="sip" data-i="'+i+'" data-c="1" inputmode="numeric" placeholder="rep" value="'+(sr[1]||'')+'">'+
+       (i<arr.length ? '<button class="sdel" data-i="'+i+'" title="quitar">×</button>' : '<span class="sdel ph"></span>')+
+       '</div>';
+  }
+  h+='</div>';
+  h+='<button class="sadd">+ Añadir serie</button>';
+  h+='<div class="sres">'+resumenSeries(arr)+'</div>';
+  box.innerHTML=h;
+
+  box.querySelectorAll('.wkchip').forEach(function(b){
+    b.onclick=function(e){ e.stopPropagation(); _semActiva[key]=parseInt(this.getAttribute('data-w'),10); pintarSeries(box,key); };
+  });
+  box.querySelectorAll('.sip').forEach(function(inp){
+    inp.addEventListener('click',function(e){ e.stopPropagation(); });
+    inp.addEventListener('input',function(){
+      ponerSerie(key,w,parseInt(this.getAttribute('data-i'),10),parseInt(this.getAttribute('data-c'),10),this.value.trim());
+      const r=box.querySelector('.sres');
+      if(r) r.innerHTML=resumenSeries(normaliza(logs[key]&&logs[key][w]));
+    });
+  });
+  box.querySelectorAll('.sdel').forEach(function(b){
+    if(!b.getAttribute('data-i')) return;
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      quitarSerie(key,w,parseInt(this.getAttribute('data-i'),10));
+      pintarSeries(box,key);
+    });
+  });
+  const sa=box.querySelector('.sadd');
+  if(sa) sa.addEventListener('click',function(e){
+    e.stopPropagation();
+    anadirSerie(key,w);
+    pintarSeries(box,key);
+  });
+}
+
 /* ====== RECORDS PERSONALES ====== */
 let PRS = {};
 const PR_KEY = 'prs';
@@ -390,9 +505,11 @@ function computePRs(){
   const out={};
   Object.keys(logs).forEach(k=>{
     const w=logs[k]; if(!w) return;
-    Object.keys(w).forEach(wk=>{ const e=w[wk]; if(!e) return;
-      const n=prNumeric(e[0]);
-      if(!isNaN(n) && n>(out[k]?out[k].n:0)) out[k]={n:n, raw:e[0], wk:wk, date:(prev[k]&&prev[k].date)||todayISO()};
+    Object.keys(w).forEach(wk=>{
+      normaliza(w[wk]).forEach(function(e){
+        const n=prNumeric(e[0]);
+        if(!isNaN(n) && n>(out[k]?out[k].n:0)) out[k]={n:n, raw:e[0], wk:wk, date:(prev[k]&&prev[k].date)||todayISO()};
+      });
     });
   });
   // conservar PRs de la nube que no esten en logs (con su fecha)
@@ -412,11 +529,11 @@ function renderPRs(){
   }).sort((a,b)=>b.n-a.n);
   list.innerHTML=rows.map(r=>'<div class="prrow"><span class="pname">'+r.nm+'</span><span><span class="pval">'+r.v+'</span><span class="pwk">'+r.wk+'</span></span></div>').join('');
 }
-function checkPR(key, val){
+function checkPR(key, val, w){
   const n=prNumeric(val); if(isNaN(n)) return;
   if(!PRS[key] || n>PRS[key].n){
     const prev=PRS[key]?PRS[key].n:0;
-    PRS[key]={n:n, raw:val, wk:'S'+(Object.keys(logs[key]||{}).length), date:todayISO()};
+    PRS[key]={n:n, raw:val, wk:(w||'Sem 1').replace('Sem ','S'), date:todayISO()};
     if(prev>0){ // solo avisar cuando ya tenia marca previa
       const parts=key.split('_'); const di=parseInt(parts[0].replace('d',''),10)-1; const ei=parseInt(parts[1],10);
       const nm=(DAYS[di]&&DAYS[di].exercises[ei])?DAYS[di].exercises[ei].n:key;
@@ -569,51 +686,17 @@ function renderDays(){
   card.innerHTML=html;
   daysEl.appendChild(card);
 
-  // filas de registro semanal (S1..S8)
+  // registro por SEMANA -> SERIES
   d.exercises.forEach((ex,ei)=>{
-    const box=card.querySelector('#rows_'+di+'_'+ei);
-    const key=weekKey(d.id,ei);
-    const saved=logs[key]||{};
-    WEEKS.forEach(w=>{
-      const row=document.createElement('div');
-      const done=saved[w] && saved[w][0] && saved[w][1];
-      if(done) row.className='wrow done'; else row.className='wrow';
-      const wk=document.createElement('div'); wk.className='wk'; wk.textContent=w;
-      const mkIn=(idx,placeholder,mode)=>{
-        const inp=document.createElement('input');
-        inp.type='text'; inp.inputMode=mode; inp.autocomplete='off'; inp.placeholder=placeholder;
-        let dv='';
-        if(idx===0 && w==='S1' && !(saved&&saved[w]) && HIST[ex.n]) dv=HIST[ex.n];
-        inp.value = (saved[w]&&saved[w][idx])?saved[w][idx]:dv;
-        inp.addEventListener('input',()=>{
-          saveCell(key,w,idx,inp.value.trim());
-          const a=logs[key]&&logs[key][w];
-          row.classList.toggle('done', !!(a&&a[0]&&a[1]));
-        });
-        inp.addEventListener('click',e=>e.stopPropagation());
-        return inp;
-      };
-      const peso=mkIn(0,'kg','decimal');
-      const reps=mkIn(1,'reps','numeric');
-      const x=document.createElement('div'); x.className='x'; x.textContent='×';
-      row.appendChild(wk); row.appendChild(peso); row.appendChild(x); row.appendChild(reps);
-      box.appendChild(row);
-    });
+    pintarSeries(card.querySelector('#rows_'+di+'_'+ei), weekKey(d.id,ei));
   });
   });
   bindEx();
   if (typeof showDay === 'function') showDay(_currentDay);
 }
 
-function saveCell(key,w,idx,val){
-  if(!logs[key]) logs[key]={};
-  if(!logs[key][w]) logs[key][w]=['',''];
-  logs[key][w][idx]=val;
-  localStorage.setItem(LS,JSON.stringify(logs));
-  if(val && String(val).trim()) marcarActividad();
-  if(idx===0) checkPR(key,val);
-  renderPRs();
-  syncCloud();
+function saveCell(key,w,idx,val){   // compatibilidad: redirige al sistema de series
+  ponerSerie(key,w,0,idx,val);
 }
 // tocar ejercicio = acordeon: abre el suyo y cierra los demas del dia
 function bindEx(){
