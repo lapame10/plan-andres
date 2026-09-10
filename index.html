@@ -86,14 +86,12 @@
   #toast.show{transform:translate(-50%,0);}
   #toast small{display:block;font-weight:700;font-size:11px;opacity:.75;margin-top:3px;}
   /* TIP DEL DIA */
-  #tipBox{display:none;margin:12px 16px 0;background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:9px 13px;cursor:pointer;}
-  #tipBox.open{background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(255,138,61,.05));border-color:rgba(255,138,61,.3);}
+  #tipBox{display:none;margin:12px 16px 0;background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(255,138,61,.05));
+    border:1px solid rgba(255,138,61,.3);border-radius:16px;padding:12px 15px;}
   #tipBox .tl{font-size:9px;letter-spacing:2px;color:var(--daycolor,var(--orange));font-weight:800;text-transform:uppercase;
     display:flex;align-items:center;justify-content:space-between;}
   #tipBox .tl .chev2{font-size:11px;color:var(--orange);}
-  #tipBody{max-height:0;overflow:hidden;transition:max-height .35s ease;}
-  #tipBox.open #tipBody{max-height:320px;}
+  #tipBody{max-height:none;overflow:visible;}
   #tipBox .tx{font-size:13.5px;line-height:1.5;color:#f0f0f4;}
   #tipBox .tx b{color:var(--orange);}
   #tipBox .dt{font-size:10px;color:var(--dim);margin-top:7px;}
@@ -182,7 +180,7 @@
 
 <div id="dayNav"></div>
 
-<div id="tipBox"><div class="tl" id="tipHead">Tip del día <span class="chev2" id="tipChev">▾</span></div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div></div>
+<div id="tipBox"><div class="tl" id="tipHead">Tip del día</div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div></div>
 
 <div id="days"></div>
 
@@ -333,13 +331,6 @@ function syncCloud(){
     }catch(e){}
   },700);
 }
-document.addEventListener('click',function(e){
-  if(e.target.closest('#tipBox')){
-    const b=document.getElementById('tipBox');
-    b.classList.toggle('open');
-    document.getElementById('tipChev').textContent=b.classList.contains('open')?'▴':'▾';
-  }
-});
 async function tipLoad(){
   try{
     const r=await fetch(RTDB+'/'+CLOUD+'/tip.json',{cache:'no-store'});
