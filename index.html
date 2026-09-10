@@ -262,6 +262,37 @@ const LS = 'planAndresV1';
 let logs = {};
 try { logs = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) {}
 
+/* ====== SINCRONIZACION EN NUBE (Firebase Realtime) ====== */
+const RTDB='https://plan-gym-8aff7-default-rtdb.firebaseio.com';
+const CLOUD='andres';
+let _syncT=null;
+async function cloudLoad(){
+  try{
+    const r=await fetch(RTDB+'/'+CLOUD+'/logs.json',{cache:'no-store'});
+    if(r.ok){
+      const d=await r.json();
+      if(d&&typeof d==='object'&&Object.keys(d).length){
+        if(JSON.stringify(d)!==JSON.stringify(logs)){
+          logs=d; localStorage.setItem(LS,JSON.stringify(logs));
+          if(!sessionStorage.getItem('cr')){
+            sessionStorage.setItem('cr','1');
+            location.reload();
+          }
+        }
+      }
+    }
+  }catch(e){}
+}
+function syncCloud(){
+  clearTimeout(_syncT);
+  _syncT=setTimeout(async()=>{
+    try{
+      await fetch(RTDB+'/'+CLOUD+'/logs.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(logs)});
+    }catch(e){}
+  },700);
+}
+cloudLoad();
+
 function weekKey(dayId, exIdx){ return dayId+'_'+exIdx; }
 
 /* ====== RENDER ====== */
@@ -339,6 +370,7 @@ function saveCell(key,w,idx,val){
   if(!logs[key][w]) logs[key][w]=['',''];
   logs[key][w][idx]=val;
   localStorage.setItem(LS,JSON.stringify(logs));
+  syncCloud();
 }
 // tocar ejercicio = acordeon: abre el suyo y cierra los demas del dia
 document.querySelectorAll('.ex').forEach(ex=>{
