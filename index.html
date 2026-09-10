@@ -391,7 +391,7 @@ function checkPR(key, val){
     if(prev>0){ // solo avisar cuando ya tenia marca previa
       const parts=key.split('_'); const di=parseInt(parts[0].replace('d',''),10)-1; const ei=parseInt(parts[1],10);
       const nm=(DAYS[di]&&DAYS[di].exercises[ei])?DAYS[di].exercises[ei].n:key;
-      showToast('¡NUEVO RÉCORD!','+nm+' · '+val);
+      showToast('¡NUEVO RÉCORD!', nm+' · '+val);
     }
     syncPRs();
   }
