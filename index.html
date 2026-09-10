@@ -93,6 +93,9 @@
     display:flex;align-items:center;justify-content:space-between;}
   #tipBox .tl .chev2{font-size:11px;color:var(--orange);}
   #tipBody{max-height:none;overflow:visible;}
+  #prCongrats{display:none;margin-top:10px;padding:10px 12px;border-radius:11px;
+    background:rgba(61,214,140,.12);border:1px solid rgba(61,214,140,.35);color:var(--green);font-size:13px;line-height:1.45;}
+  #prCongrats b{color:#fff;}
   #tipBox .tx{font-size:13.5px;line-height:1.5;color:#f0f0f4;}
   #tipBox .tx b{color:var(--orange);}
   #tipBox .dt{font-size:10px;color:var(--dim);margin-top:7px;}
@@ -181,7 +184,7 @@
 
 <div id="dayNav"></div>
 
-<div id="tipBox"><div class="tl" id="tipHead">Tip del día</div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div></div>
+<div id="tipBox"><div class="tl" id="tipHead">Tip del día</div><div id="tipBody"><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div><div id="prCongrats"></div></div>
 
 <div id="days"></div>
 
@@ -379,7 +382,7 @@ function checkPR(key, val){
   const n=prNumeric(val); if(isNaN(n)) return;
   if(!PRS[key] || n>PRS[key].n){
     const prev=PRS[key]?PRS[key].n:0;
-    PRS[key]={n:n, raw:val, wk:'S'+(Object.keys(logs[key]||{}).length)};
+    PRS[key]={n:n, raw:val, wk:'S'+(Object.keys(logs[key]||{}).length), date:todayISO()};
     if(prev>0){ // solo avisar cuando ya tenia marca previa
       const parts=key.split('_'); const di=parseInt(parts[0].replace('d',''),10)-1; const ei=parseInt(parts[1],10);
       const nm=(DAYS[di]&&DAYS[di].exercises[ei])?DAYS[di].exercises[ei].n:key;
@@ -405,7 +408,29 @@ async function prLoad(){
     if(r.ok){ const d=await r.json(); if(d&&typeof d==='object') PRS=d; }
   }catch(e){}
   renderPRs();
+  renderCongrats();
 }
+
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderCongrats(){
+  const box=document.getElementById('prCongrats'); if(!box) return;
+  const t0=todayISO();
+  const y=new Date(); y.setDate(y.getDate()-1);
+  const y0=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+  const hits=[];
+  Object.keys(PRS||{}).forEach(k=>{
+    const p=PRS[k]; if(!p||!p.date) return;
+    if(p.date===y0){   // PR de ayer
+      const parts=k.split('_'); const di=parseInt(parts[0].replace('d',''),10)-1; const ei=parseInt(parts[1],10);
+      const nm=(DAYS[di]&&DAYS[di].exercises[ei])?DAYS[di].exercises[ei].n:k;
+      hits.push({nm:nm, v:p.raw+(prLabel(p.raw)?'':' kg'), hoy:p.date===t0});
+    }
+  });
+  if(!hits.length){ box.style.display='none'; return; }
+  box.innerHTML=hits.map(function(h){var nm=h.nm, v=h.v; return '🏆 <b>¡Felicidades!</b> Ayer lograste un PR en <b>'+nm+'</b>: <b>'+v+'</b>. ¡Sigue así! 💪';}).join('');
+  box.style.display='block';
+}
+
 prLoad();
 document.addEventListener('click',function(e){
   if(e.target.closest('#prWrap')){
