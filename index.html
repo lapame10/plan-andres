@@ -70,10 +70,6 @@
   #streakBox{margin:12px 16px 0;background:linear-gradient(150deg,rgba(255,120,40,.13),rgba(255,80,120,.06));
     border:1px solid rgba(255,138,61,.32);border-radius:16px;padding:13px 14px;}
   #streakBox .fuegos{font-size:19px;letter-spacing:1px;line-height:1.2;}
-  .fireimg{height:21px;vertical-align:-4px;margin-right:1px;}
-  .fireimg.dim{opacity:.4;}
-  .firex{font-size:12px;color:#ffb37a;font-weight:800;margin-left:3px;}
-
   #streakBox .rtxt{font-size:12.5px;color:#ffd9b8;font-weight:700;margin-top:6px;}
   #streakBox .rsub{font-size:10.5px;color:var(--dim);margin-top:3px;}
   #coleccion{display:none;flex-wrap:wrap;gap:7px;margin-top:11px;}
@@ -350,14 +346,12 @@ async function cloudLoad(){
       if(d&&typeof d==='object'&&Object.keys(d).length){
         if(JSON.stringify(d)!==JSON.stringify(logs)){
           logs=d; localStorage.setItem(LS,JSON.stringify(logs));
-          if(!sessionStorage.getItem('cr')){
-            sessionStorage.setItem('cr','1');
-            location.reload();
-          }
+          return true;   // FIX: avisar en vez de recargar
         }
       }
     }
   }catch(e){}
+  return false;
 }
 function syncCloud(){
   clearTimeout(_syncT);
@@ -492,14 +486,11 @@ function renderStreak(){
   const fu=document.getElementById('fuegos'), rt=document.getElementById('rtxt'), rs=document.getElementById('rsub');
   if(!fu) return;
   if(n===0){
-    fu.innerHTML='<img src="'+FIRE+'" class="fireimg dim">';
+    fu.innerHTML='<img src="'+FIRE+'" style="height:21px;opacity:.45;vertical-align:-4px">';
     rt.textContent=LBL.sinRacha;
     rs.textContent=LBL.anota;
   } else {
-    let fh=''; const k=Math.min(n,5);
-    for(let i=0;i<k;i++) fh+='<img src="'+FIRE+'" class="fireimg">';
-    if(n>5) fh+='<span class="firex">×'+n+'</span>';
-    fu.innerHTML=fh;
+    fu.innerHTML='<img src="'+FIRE+'" style="height:21px;vertical-align:-4px;margin-right:1px">'.repeat(Math.min(n,5))+(n>5?('<span style="font-size:12px;color:#ffb37a;font-weight:800"> ×'+n+'</span>'):'');
     rt.textContent=(n===1?LBL.racha1:LBL.racha).replace('{n}',n);
     const sig=ITEMS.find(it=>it[0]>n);
     rs.textContent=sig?(LBL.faltan.replace('{n}',sig[0]-n).replace('{ico}',sig[1])):LBL.todos;
@@ -529,7 +520,6 @@ document.addEventListener('click',function(e){
     if(w.classList.contains('open')) renderPRs();
   }
 });
-cloudLoad();
 
 function weekKey(dayId, exIdx){ return dayId+'_'+exIdx; }
 
@@ -544,7 +534,10 @@ DAYS.forEach((d,i)=>{
 });
 
 const daysEl = document.getElementById('days');
-DAYS.forEach((d,di)=>{
+let _currentDay = 0;
+function renderDays(){
+  daysEl.innerHTML='';
+  DAYS.forEach((d,di)=>{
   const card=document.createElement('div');
   card.className='daycard'+(di===0?' show':'');
   card.id=d.id;
@@ -603,7 +596,10 @@ DAYS.forEach((d,di)=>{
       box.appendChild(row);
     });
   });
-});
+  });
+  bindEx();
+  if (typeof showDay === 'function') showDay(_currentDay);
+}
 
 function saveCell(key,w,idx,val){
   if(!logs[key]) logs[key]={};
@@ -616,6 +612,7 @@ function saveCell(key,w,idx,val){
   syncCloud();
 }
 // tocar ejercicio = acordeon: abre el suyo y cierra los demas del dia
+function bindEx(){
 document.querySelectorAll('.ex').forEach(ex=>{
   ex.addEventListener('click',e=>{
     if(e.target.closest('.wrows')||e.target.closest('.vidbtn')||e.target.isContentEditable) return;
@@ -639,8 +636,10 @@ document.querySelectorAll('.ex').forEach(ex=>{
     }
   });
 });
+}
 
 function showDay(i){
+  _currentDay = i;
   document.querySelectorAll('.daycard').forEach((c,ci)=>c.classList.toggle('show',ci===i));
   document.querySelectorAll('.daybtn').forEach((b,bi)=>b.classList.toggle('active',bi===i));
   if(DAYS[i]) document.documentElement.style.setProperty('--daycolor', DAYS[i].color);
@@ -719,6 +718,18 @@ document.getElementById('tReset').onclick=()=>{ stopT(); left=0; doneSets=0; ren
 document.getElementById('sMinus').onclick=()=>{ if(setsTotal>1){setsTotal--; setNumEl.textContent=setsTotal; doneSets=0; renderProg();} };
 document.getElementById('sPlus').onclick=()=>{ if(setsTotal<12){setsTotal++; setNumEl.textContent=setsTotal; doneSets=0; renderProg();} };
 renderClock(); renderProg();
+
+/* ============================================================
+   ARRANQUE
+   Antes: las celdas se pintaban con los datos LOCALES y cloudLoad()
+   llegaba despues (async) sin repintar -> la tabla salia vacia aunque
+   los registros estuvieran en la nube. Ahora se repinta al llegar.
+   ============================================================ */
+renderDays();
+renderPRs();
+cloudLoad().then(function(cambio){
+  if(cambio){ renderDays(); renderPRs(); }
+});
 </script>
 </body>
 </html>
