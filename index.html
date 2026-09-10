@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Programa de Hipertrofia — Andrés Tello</title>
 <style>
   :root{
@@ -337,6 +340,7 @@ try { logs = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) {}
 /* ====== SINCRONIZACION EN NUBE (Firebase Realtime) ====== */
 const RTDB='https://plan-gym-8aff7-default-rtdb.firebaseio.com';
 const CLOUD='andres';
+const BUILD='p1';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
 let _syncT=null;
 async function cloudLoad(){
   try{
@@ -729,6 +733,50 @@ renderDays();
 renderPRs();
 cloudLoad().then(function(cambio){
   if(cambio){ renderDays(); renderPRs(); }
+});
+
+/* ============================================================
+   AUTO-ACTUALIZACION + DATOS EN VIVO
+   Fix del cache de Safari en iOS: si el BUILD servido ya no es el
+   que esta corriendo, la pagina se recarga sola (nada de ?v= a mano).
+   ============================================================ */
+function vigilarVersion(){
+  var ya='';
+  try{ ya=sessionStorage.getItem('pv_reload')||''; }catch(e){}
+  if(ya===BUILD) return;
+  fetch('?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){ return r.ok?r.text():null; })
+    .then(function(t){
+      if(!t) return;
+      var m=t.match(/const BUILD\s*=\s*'([^']+)'/);
+      if(m && m[1]!==BUILD){
+        try{ sessionStorage.setItem('pv_reload',m[1]); }catch(e){}
+        location.replace(location.pathname+'?v='+Date.now());
+      }
+    })
+    .catch(function(){});
+}
+function refrescarDatos(){
+  if(document.hidden) return;
+  var ae=document.activeElement;
+  if(ae && (ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA')) return;
+  fetch(RTDB+'/'+CLOUD+'/logs.json',{cache:'no-store'})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(d){
+      if(!d || typeof d!=='object' || !Object.keys(d).length) return;
+      if(JSON.stringify(d)!==JSON.stringify(logs)){
+        logs=d;
+        try{ localStorage.setItem(LS,JSON.stringify(logs)); }catch(e){}
+        renderDays();
+        renderPRs();
+      }
+    })
+    .catch(function(){});
+}
+vigilarVersion();
+setInterval(refrescarDatos,60000);
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden){ refrescarDatos(); vigilarVersion(); }
 });
 </script>
 </body>
