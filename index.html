@@ -27,7 +27,7 @@
   ::-webkit-scrollbar{width:0;height:0;}
 
   /* HEADER */
-  header{padding:calc(env(safe-area-inset-top,0px)+34px) 20px 12px;text-align:center;
+  header{padding:calc(env(safe-area-inset-top,0px) + 34px) 20px 12px;text-align:center;
     background:linear-gradient(180deg,rgba(255,138,61,.14),rgba(255,138,61,.03) 55%,transparent 100%);}
   .mark{display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;
     background:linear-gradient(135deg,var(--orange),#ffb37a);border-radius:14px;
@@ -374,7 +374,7 @@ try { logs = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) {}
 /* ====== SINCRONIZACION EN NUBE (Firebase Realtime) ====== */
 const RTDB='https://plan-gym-8aff7-default-rtdb.firebaseio.com';
 const CLOUD='andres';
-const BUILD='p6';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
+const BUILD='p7';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
 let _syncT=null;
 async function cloudLoad(){
   try{
