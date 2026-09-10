@@ -65,6 +65,14 @@
   .ex .cyc{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange);
     background:rgba(255,138,61,.12);padding:4px 9px;border-radius:8px;white-space:nowrap;}
   .ex .cyc.alt{color:var(--cyan);background:rgba(77,216,255,.10);}
+  /* TIP DEL DIA */
+  #tipBox{display:none;margin:12px 16px 0;background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(255,138,61,.05));
+    border:1px solid rgba(255,138,61,.3);border-radius:16px;padding:13px 15px;}
+  #tipBox .tl{font-size:9px;letter-spacing:2px;color:var(--orange);font-weight:800;text-transform:uppercase;margin-bottom:6px;}
+  #tipBox .tx{font-size:13.5px;line-height:1.5;color:#f0f0f4;}
+  #tipBox .tx b{color:var(--orange);}
+  #tipBox .dt{font-size:10px;color:var(--dim);margin-top:7px;}
+
   /* LOG ROWS */
   .wrows{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:6px;}
   .wrows.open{display:block;}
@@ -140,6 +148,8 @@
     <span class="tag">+12 reps → <b>+30s</b></span>
   </div>
 </header>
+
+<div id="tipBox"><div class="tl">Tip del día</div><div class="tx" id="tipText"></div><div class="dt" id="tipDate"></div></div>
 
 <div class="rules">
   <div class="rule"><b>Cronómetro:</b> pones 2:00, haces la serie (lo que tarde) y descansas lo que resta. La siguiente serie empieza cuando suena.</div>
@@ -291,6 +301,20 @@ function syncCloud(){
     }catch(e){}
   },700);
 }
+async function tipLoad(){
+  try{
+    const r=await fetch(RTDB+'/'+CLOUD+'/tip.json',{cache:'no-store'});
+    if(r.ok){
+      const d=await r.json();
+      if(d&&d.text){
+        document.getElementById('tipText').innerHTML=d.text;
+        document.getElementById('tipDate').textContent=d.date?('Actualizado: '+d.date):'';
+        document.getElementById('tipBox').style.display='block';
+      }
+    }
+  }catch(e){}
+}
+tipLoad();
 cloudLoad();
 
 function weekKey(dayId, exIdx){ return dayId+'_'+exIdx; }
