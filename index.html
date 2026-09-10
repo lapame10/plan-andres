@@ -356,14 +356,18 @@ const PR_KEY = 'prs';
 function prNumeric(s){ if(!s) return NaN; const m=String(s).replace(',','.').match(/[0-9]+(\.[0-9]+)?/); return m?parseFloat(m[0]):NaN; }
 function prLabel(s){ const m=String(s).match(/(kg|lb|lbs)/i); return m?m[1].toLowerCase():''; }
 function computePRs(){
-  PRS={};
+  const prev=PRS||{};
+  const out={};
   Object.keys(logs).forEach(k=>{
     const w=logs[k]; if(!w) return;
     Object.keys(w).forEach(wk=>{ const e=w[wk]; if(!e) return;
       const n=prNumeric(e[0]);
-      if(!isNaN(n) && n>(PRS[k]?PRS[k].n:0)) PRS[k]={n:n, raw:e[0], wk:wk};
+      if(!isNaN(n) && n>(out[k]?out[k].n:0)) out[k]={n:n, raw:e[0], wk:wk, date:(prev[k]&&prev[k].date)||todayISO()};
     });
   });
+  // conservar PRs de la nube que no esten en logs (con su fecha)
+  Object.keys(prev).forEach(k=>{ if(!out[k] && prev[k] && prev[k].n) out[k]=prev[k]; });
+  PRS=out;
 }
 function renderPRs(){
   const list=document.getElementById('prList');
