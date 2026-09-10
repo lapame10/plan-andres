@@ -268,7 +268,7 @@
 </div>
 <div id="toast"></div>
 
-<footer><div style="margin-bottom:7px"><a href="https://lapame10.github.io/plan-gym/" style="color:#78838f;text-decoration:none">‹ Cambiar perfil</a></div>
+<footer>
   Regla A/B · Registra cada semana tocando un ejercicio.<br>
   Los datos se guardan en este dispositivo.
 </footer>
@@ -361,7 +361,7 @@ try { logs = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) {}
 /* ====== SINCRONIZACION EN NUBE (Firebase Realtime) ====== */
 const RTDB='https://plan-gym-8aff7-default-rtdb.firebaseio.com';
 const CLOUD='andres';
-const BUILD='p2';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
+const BUILD='p3';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
 let _syncT=null;
 async function cloudLoad(){
   try{
@@ -680,6 +680,7 @@ function renderDays(){
         <span class="vleft"><span class="vplay">▶</span><span><span class="vlabel">VER VIDEO</span><span class="vsub">Toca para ver la técnica</span></span></span>
         <span class="vgo">›</span></a></div>
       ${baseInfo(ex.n)?'<div class="basenote">Última marca: <b>'+baseInfo(ex.n)+'</b></div>':''}
+      <div class="sbox" id="sbox_${di}_${ei}"></div>
     </div>
     </div>`;
   });
@@ -688,7 +689,7 @@ function renderDays(){
 
   // registro por SEMANA -> SERIES
   d.exercises.forEach((ex,ei)=>{
-    pintarSeries(card.querySelector('#rows_'+di+'_'+ei), weekKey(d.id,ei));
+    pintarSeries(card.querySelector('#sbox_'+di+'_'+ei), weekKey(d.id,ei));
   });
   });
   bindEx();
