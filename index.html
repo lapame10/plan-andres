@@ -67,8 +67,9 @@
     background:color-mix(in srgb, var(--daycolor, #ff8a3d) 14%, transparent);padding:4px 9px;border-radius:8px;white-space:nowrap;}
   .ex .cyc.alt{color:var(--daycolor,var(--orange));background:color-mix(in srgb, var(--daycolor, #ff8a3d) 9%, transparent);border:1px solid color-mix(in srgb, var(--daycolor, #ff8a3d) 35%, transparent);}
   /* TIP DEL DIA */
-  #tipBox{display:none;margin:12px 16px 0;background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(255,138,61,.05));
-    border:1px solid rgba(255,138,61,.3);border-radius:16px;padding:12px 15px;cursor:pointer;}
+  #tipBox{display:none;margin:12px 16px 0;background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:9px 13px;cursor:pointer;}
+  #tipBox.open{background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(255,138,61,.05));border-color:rgba(255,138,61,.3);}
   #tipBox .tl{font-size:9px;letter-spacing:2px;color:var(--daycolor,var(--orange));font-weight:800;text-transform:uppercase;
     display:flex;align-items:center;justify-content:space-between;}
   #tipBox .tl .chev2{font-size:11px;color:var(--orange);}
@@ -323,12 +324,6 @@ async function tipLoad(){
         document.getElementById('tipText').innerHTML=d.text;
         document.getElementById('tipDate').textContent=d.date?('Actualizado: '+d.date):'';
         document.getElementById('tipBox').style.display='block';
-        // abrir automatico si el tip es nuevo
-        if(d.date && sessionStorage.getItem('tipSeen')!==d.date){
-          document.getElementById('tipBox').classList.add('open');
-          document.getElementById('tipChev').textContent='▴';
-          sessionStorage.setItem('tipSeen',d.date);
-        }
       }
     }
   }catch(e){}
