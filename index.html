@@ -117,7 +117,7 @@
   .srow input:focus{border-color:var(--daycolor,var(--orange));background:rgba(255,255,255,.07);}
   .srow input::placeholder{color:#3c3c48;}
   .srow .x{color:#4a4a58;font-size:11px;text-align:center;}
-  .srow .sdel{background:none;border:none;color:#5a5a68;font-size:16px;padding:0;line-height:1;font-family:inherit;}
+  .srow .sdel{background:none;border:none;color:#5a5a68;font-size:16px;padding:0;line-height:1;font-family:inherit;}  /* solo se usa la version .ph (hueco): el boton se quito a proposito */
   .srow .sdel.ph{visibility:hidden;}
   .sadd{width:100%;margin-top:7px;background:rgba(255,255,255,.03);border:1px dashed var(--line);
     color:var(--dim);font-family:inherit;font-size:11px;font-weight:800;padding:9px;border-radius:8px;}
@@ -374,7 +374,7 @@ try { logs = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) {}
 /* ====== SINCRONIZACION EN NUBE (Firebase Realtime) ====== */
 const RTDB='https://plan-gym-8aff7-default-rtdb.firebaseio.com';
 const CLOUD='andres';
-const BUILD='p9';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
+const BUILD='p10';   // SUBIR EN CADA DEPLOY -> auto-actualiza la pagina
 let _syncT=null;
 async function cloudLoad(){
   try{
@@ -494,7 +494,7 @@ function pintarSeries(box,key){
        '<input class="sip" data-i="'+i+'" data-c="0" inputmode="decimal" placeholder="'+u+'" value="'+soloNumero(sr[0])+'">'+
        '<span class="x">×</span>'+
        '<input class="sip" data-i="'+i+'" data-c="1" inputmode="numeric" placeholder="rep" value="'+(sr[1]||'')+'">'+
-       (i<arr.length ? '<button class="sdel" data-i="'+i+'" title="quitar">×</button>' : '<span class="sdel ph"></span>')+
+       '<span class="sdel ph"></span>'+
        '</div>';
   }
   h+='</div>';
@@ -528,14 +528,8 @@ function pintarSeries(box,key){
       pintarSeries(box,key);
     });
   });
-  box.querySelectorAll('.sdel').forEach(function(b){
-    if(!b.getAttribute('data-i')) return;
-    b.addEventListener('click',function(e){
-      e.stopPropagation();
-      quitarSerie(key,w,parseInt(this.getAttribute('data-i'),10));
-      pintarSeries(box,key);
-    });
-  });
+  /* El boton de borrar serie se quito a proposito: se borraba sin querer.
+     Si sobran series, se dejan en blanco (no cuentan). No volver a ponerlo. */
   const sa=box.querySelector('.sadd');
   if(sa) sa.addEventListener('click',function(e){
     e.stopPropagation();
