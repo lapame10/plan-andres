@@ -675,7 +675,10 @@ function renderStreak(){
     rt.textContent=LBL.sinRacha;
     rs.textContent=LBL.anota;
   } else {
-    fu.innerHTML='<img src="'+FIRE+'" style="height:21px;vertical-align:-4px;margin-right:1px">'.repeat(Math.min(n,5))+(n>5?('<span style="font-size:12px;color:#ffb37a;font-weight:800"> ×'+n+'</span>'):'');
+    /* OJO CON LOS PARENTESIS: el punto se evalua antes que la suma, asi que
+       sin ellos el .repeat() se aplicaba SOLO al trozo final de la cadena, no al
+       <img> entero. Salia una imagen y el resto como texto suelto. */
+    fu.innerHTML=('<img src="'+FIRE+'" style="height:21px;vertical-align:-4px;margin-right:1px">').repeat(Math.min(n,5))+(n>5?('<span style="font-size:12px;color:#ffb37a;font-weight:800"> ×'+n+'</span>'):'');
     rt.textContent=(n===1?LBL.racha1:LBL.racha).replace('{n}',n);
     const sig=ITEMS.find(it=>it[0]>n);
     /* El icono de ITEMS es HTML (el del primer nivel es una imagen), asi que no
