@@ -678,7 +678,16 @@ function renderStreak(){
     fu.innerHTML='<img src="'+FIRE+'" style="height:21px;vertical-align:-4px;margin-right:1px">'.repeat(Math.min(n,5))+(n>5?('<span style="font-size:12px;color:#ffb37a;font-weight:800"> ×'+n+'</span>'):'');
     rt.textContent=(n===1?LBL.racha1:LBL.racha).replace('{n}',n);
     const sig=ITEMS.find(it=>it[0]>n);
-    rs.textContent=sig?(LBL.faltan.replace('{n}',sig[0]-n).replace('{ico}',sig[1])):LBL.todos;
+    /* El icono de ITEMS es HTML (el del primer nivel es una imagen), asi que no
+       puede ir en un textContent: se veria la etiqueta escrita en vez del
+       dibujo. Pam lo vio justo asi en el movil. Aqui va con innerHTML; el resto
+       de la frase sale de LBL, que son textos de la app, y el numero se pasa a
+       texto con String. */
+    if(sig){
+      rs.innerHTML=LBL.faltan.replace('{n}',String(sig[0]-n)).replace('{ico}',sig[1]);
+    } else {
+      rs.textContent=LBL.todos;
+    }
   }
   const col=document.getElementById('coleccion');
   col.innerHTML=ITEMS.map(it=>'<div class="item'+(n>=it[0]?' got':'')+'"><div class="ico">'+it[1]+'</div><div class="nm">'+it[2]+'</div></div>').join('');
